@@ -1,0 +1,134 @@
+name: invexa
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.15.3-pg16
+    container_name: invexa-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-invexa}
+      POSTGRES_USER: ${POSTGRES_USER:-invexa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-invexa_password}
+      TZ: ${TZ:-Asia/Kolkata}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ./infra/timescaledb/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-invexa} -d ${POSTGRES_DB:-invexa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: invexa-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: invexa-kafka
+    restart: unless-stopped
+    ports:
+      - "${KAFKA_EXTERNAL_PORT:-9094}:9094"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:${KAFKA_EXTERNAL_PORT:-9094}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  kafka-init:
+    image: apache/kafka:3.7.0
+    container_name: invexa-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: >
+      bash -c "
+        until /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do
+          sleep 2
+        done &&
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic price-ticks --partitions 5 --replication-factor 1 &&
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic orders-placed --partitions 3 --replication-factor 1 &&
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic orders-filled --partitions 3 --replication-factor 1 &&
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic sim-control --partitions 1 --replication-factor 1 &&
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic competition-events --partitions 2 --replication-factor 1
+      "
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: invexa-backend
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: development
+      PORT: ${BACKEND_PORT:-3000}
+      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret}
+      DATABASE_URL: postgres://${POSTGRES_USER:-invexa}:${POSTGRES_PASSWORD:-invexa_password}@timescaledb:5432/${POSTGRES_DB:-invexa}
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: invexa-backend
+      KAFKAJS_NO_PARTITIONER_WARNING: "1"
+      CORS_ORIGIN: http://localhost:5173
+      SIM_CONTROL_TOPIC: ${SIM_CONTROL_TOPIC:-sim-control}
+      PRICE_TICKS_TOPIC: ${PRICE_TICKS_TOPIC:-price-ticks}
+      ORDERS_PLACED_TOPIC: ${ORDERS_PLACED_TOPIC:-orders-placed}
+      ORDERS_FILLED_TOPIC: ${ORDERS_FILLED_TOPIC:-orders-filled}
+      COMPETITION_EVENTS_TOPIC: ${COMPETITION_EVENTS_TOPIC:-competition-events}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+
+  sim:
+    build:
+      context: ./sim
+      dockerfile: Dockerfile
+    container_name: invexa-sim
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SIM_KAFKA_BROKERS: kafka:9092
+      SIM_PRICE_TOPIC: ${SIM_PRICE_TOPIC:-price-ticks}
+      SIM_CONTROL_TOPIC: ${SIM_CONTROL_TOPIC:-sim-control}
+      SIM_TICK_INTERVAL: ${SIM_TICK_INTERVAL:-1.0}
+      SIM_TICKERS: ${SIM_TICKERS:-FAKE,TSIM,NOVA,ALFA,ZENX}
+      SIM_START_PRICE: ${SIM_START_PRICE:-100.0}
+      SIM_STRATEGY: ${SIM_STRATEGY:-random_walk}
+      SIM_VOLATILITY: ${SIM_VOLATILITY:-0.02}
+      SIM_DRIFT: ${SIM_DRIFT:-0.0005}
+      SIM_MEAN_REVERSION_STRENGTH: ${SIM_MEAN_REVERSION_STRENGTH:-0.08}
+      SIM_CIRCUIT_LIMIT: ${SIM_CIRCUIT_LIMIT:-0.03}
+
+volumes:
+  timescaledb_data:

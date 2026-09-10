@@ -1,0 +1,397 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--g:#22c55e;--gbg:rgba(34,197,94,.08)}
+.tabs{display:flex;gap:2px;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:1.5rem;overflow-x:auto}
+.tab{font-size:12px;padding:7px 12px;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-0.5px;white-space:nowrap;flex-shrink:0}
+.tab.on{color:var(--g);border-bottom-color:var(--g);font-weight:500}
+.sec{display:none}.sec.on{display:block}
+.card{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1rem 1.2rem;border:0.5px solid var(--color-border-tertiary);margin-bottom:10px}
+.card h3{font-size:13px;font-weight:500;margin-bottom:8px}
+.card p,.card li{font-size:12px;color:var(--color-text-secondary);line-height:1.7}
+.card ul{padding-left:1rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+code{font-family:var(--font-mono);font-size:11px;background:var(--color-background-secondary);padding:1px 5px;border-radius:4px}
+.lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--color-text-tertiary);margin:1.2rem 0 8px}
+.badge{font-size:10px;padding:2px 8px;border-radius:20px;display:inline-block;font-weight:500}
+.bg{background:var(--color-background-success);color:var(--color-text-success)}
+.bb{background:var(--color-background-info);color:var(--color-text-info)}
+.ba{background:var(--color-background-warning);color:var(--color-text-warning)}
+.br{background:var(--color-background-danger);color:var(--color-text-danger)}
+.cb{font-family:var(--font-mono);font-size:11px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px;line-height:1.8;color:var(--color-text-secondary);overflow-x:auto;white-space:pre;margin:8px 0}
+.kw{color:var(--g)}.ty{color:var(--color-text-info)}.cm{color:var(--color-text-tertiary)}.st{color:var(--color-text-warning)}
+.row{display:flex;align-items:flex-start;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary);gap:10px;font-size:12px}
+.row:last-child{border-bottom:none}
+.mono{font-family:var(--font-mono);font-size:11px}
+.method{font-family:var(--font-mono);font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0}
+.phase{border-left:2px solid var(--color-border-secondary);padding-left:16px;margin-bottom:18px;position:relative}
+.phase::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--color-border-secondary);position:absolute;left:-5px;top:4px}
+.phase.now::before{background:var(--g)}.phase.now{border-left-color:var(--g)}
+.phase h4{font-size:13px;font-weight:500;margin-bottom:2px}
+.phase .d{font-size:11px;color:var(--color-text-tertiary);font-family:var(--font-mono);margin-bottom:6px}
+.phase li{font-size:12px;color:var(--color-text-secondary);line-height:1.8}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0}
+.fb{font-size:11px;padding:4px 9px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);white-space:nowrap}
+.fb.k{border-color:var(--g);background:var(--gbg);color:var(--g);font-weight:500}
+.fb.r{border-color:var(--color-border-info);background:var(--color-background-info);color:var(--color-text-info);font-weight:500}
+.fb.d{border-color:var(--color-border-warning);background:var(--color-background-warning);color:var(--color-text-warning);font-weight:500}
+.arr{color:var(--color-text-tertiary);font-size:13px}
+.nt{background:var(--gbg);border:0.5px solid var(--g);border-radius:var(--border-radius-md);padding:9px 12px;font-size:12px;color:var(--color-text-secondary);margin:8px 0}
+.nt strong{color:var(--g)}
+</style>
+
+<div style="padding:1rem 0 .5rem;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:1.2rem">
+  <div style="font-size:20px;font-weight:500;display:flex;align-items:center;gap:10px">
+    Invexa — Implementation Plan
+    <span style="font-size:11px;font-weight:500;background:var(--gbg);color:var(--g);border:0.5px solid var(--g);border-radius:20px;padding:2px 10px">Team 24</span>
+  </div>
+  <div style="font-size:13px;color:var(--color-text-secondary);margin-top:5px">Bun · Elysia · React · TimescaleDB · Kafka · Redis</div>
+</div>
+
+<div class="tabs">
+  <div class="tab on" onclick="sw(this,'overview')">Overview</div>
+  <div class="tab" onclick="sw(this,'schema')">DB Schema</div>
+  <div class="tab" onclick="sw(this,'kafka')">Kafka Topics</div>
+  <div class="tab" onclick="sw(this,'api')">API Routes</div>
+  <div class="tab" onclick="sw(this,'redis')">Redis Strategy</div>
+  <div class="tab" onclick="sw(this,'sim')">Sim Engine</div>
+  <div class="tab" onclick="sw(this,'timeline')">Timeline</div>
+</div>
+
+<!-- OVERVIEW -->
+<div id="overview" class="sec on">
+  <div class="lbl">Service map</div>
+  <div class="g2">
+    <div class="card">
+      <h3>🟢 Bun + Elysia backend</h3>
+      <ul>
+        <li>Elysia plugins per domain: <code>auth</code>, <code>portfolio</code>, <code>orders</code>, <code>market</code>, <code>competition</code></li>
+        <li>Built-in WebSocket via <code>wsPlugin</code> — live price push</li>
+        <li>Schema validation with Elysia TypeBox (zero runtime overhead)</li>
+        <li>Kafka consumer loop runs as Bun worker thread</li>
+        <li>JWT via <code>@elysiajs/jwt</code>, CORS via <code>@elysiajs/cors</code></li>
+        <li>Drizzle ORM for TimescaleDB queries (type-safe)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🔵 React frontend</h3>
+      <ul>
+        <li>Vite build, deployed as static files</li>
+        <li>Zustand: global store for prices, portfolio, auth</li>
+        <li>React Query: all REST fetches with stale-while-revalidate</li>
+        <li>Custom <code>usePriceSocket()</code> hook — WS connection</li>
+        <li>Recharts: live price graph + portfolio P&L chart</li>
+        <li>3 main views: Dashboard, Portfolio, Competition</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🟡 TimescaleDB</h3>
+      <ul>
+        <li><code>price_ticks</code> hypertable — 1h chunk interval</li>
+        <li>Continuous aggregate: <code>ohlc_1m</code>, <code>ohlc_5m</code> for candlestick charts</li>
+        <li>Data retention policy: raw ticks 7 days, aggregates forever</li>
+        <li>Standard PG tables for users, orders, holdings, competitions</li>
+        <li>Unique partial index on pending orders per user</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🔴 Kafka + Redis</h3>
+      <ul>
+        <li>Kafka: sim engine publishes ticks; backend consumes and persists</li>
+        <li>Kafka: orders published; order engine consumes idempotently</li>
+        <li>Redis HASH <code>prices</code>: current ticker → price (TTL 5s)</li>
+        <li>Redis ZSET <code>pending_orders</code>: sorted by trigger price</li>
+        <li>Redis Pub/Sub <code>price_channel</code>: fan-out to WS clients</li>
+        <li>Redis String: JWT session blacklist (logout / expiry)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="lbl">Key data flows</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px">Price tick pipeline</div>
+    <div class="flow">
+      <div class="fb">Python sim</div><div class="arr">→</div>
+      <div class="fb k">Kafka: price.ticks</div><div class="arr">→</div>
+      <div class="fb">Elysia consumer</div><div class="arr">→</div>
+      <div class="fb d">TimescaleDB insert</div><div class="arr">+</div>
+      <div class="fb r">Redis HSET price</div><div class="arr">→</div>
+      <div class="fb r">Pub/Sub broadcast</div><div class="arr">→</div>
+      <div class="fb">WS → React</div>
+    </div>
+    <div style="border-top:0.5px solid var(--color-border-tertiary);margin:10px 0"></div>
+    <div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px">Order placement</div>
+    <div class="flow">
+      <div class="fb">React POST /orders</div><div class="arr">→</div>
+      <div class="fb r">Check live price (Redis)</div><div class="arr">→</div>
+      <div class="fb">Validate balance/holdings</div><div class="arr">→</div>
+      <div class="fb k">Kafka: orders.placed</div><div class="arr">→</div>
+      <div class="fb">Order engine execute</div><div class="arr">→</div>
+      <div class="fb d">DB commit</div>
+    </div>
+    <div style="border-top:0.5px solid var(--color-border-tertiary);margin:10px 0"></div>
+    <div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px">Stop-loss / limit trigger</div>
+    <div class="flow">
+      <div class="fb r">Redis ZSET pending orders</div><div class="arr">→</div>
+      <div class="fb">Price tick consumer checks thresholds</div><div class="arr">→</div>
+      <div class="fb k">Emit orders.placed if triggered</div><div class="arr">→</div>
+      <div class="fb d">Portfolio update</div>
+    </div>
+  </div>
+
+  <div class="lbl">Design patterns → implementation</div>
+  <div class="g2">
+    <div class="card"><h3>Factory — order types</h3>
+      <p><code>OrderFactory.create(type, payload)</code> returns a <code>MarketOrder</code>, <code>LimitOrder</code>, or <code>StopLossOrder</code> instance. Each implements <code>.validate(balance, holdings)</code> and <code>.toKafkaPayload()</code>. Adding a new order type = one new class + factory registration.</p></div>
+    <div class="card"><h3>Observer — price events</h3>
+      <p>Redis Pub/Sub channel <code>price_channel</code> is the event bus. WS fan-out and limit-order checker are independent subscribers. Neither knows about the other — pure observer decoupling.</p></div>
+    <div class="card"><h3>Strategy — sim engine</h3>
+      <p>Python sim accepts a <code>strategy</code> config: <code>random_walk</code>, <code>mean_reversion</code>, <code>circuit_breaker</code>. Each is a class implementing <code>next_price(current: float) → float</code>. Admin can hot-swap strategy via Kafka control topic.</p></div>
+    <div class="card"><h3>Command — trade commands</h3>
+      <p>Each Kafka order message is a serialized command object with an idempotency key (<code>order_id</code> UUID). The order engine can replay Kafka from offset without double-executing, enabling crash recovery.</p></div>
+  </div>
+</div>
+
+<!-- DB SCHEMA -->
+<div id="schema" class="sec">
+  <div class="nt"><strong>Note:</strong> TimescaleDB extends PostgreSQL — all standard PG types apply. Drizzle ORM is used for type-safe query building from Bun/TypeScript.</div>
+
+  <div class="lbl">users</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <table style="width:100%;font-size:11px;border-collapse:collapse">
+      <tr><th style="text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);padding:0 8px 8px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Column</th><th style="text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);padding:0 8px 8px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Type</th><th style="text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);padding:0 8px 8px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Notes</th></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--g)">id</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">UUID PK</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">gen_random_uuid()</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">username</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">VARCHAR(50)</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">UNIQUE NOT NULL</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">email</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">VARCHAR(255)</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">UNIQUE NOT NULL</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">password_hash</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">TEXT</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">bcrypt hash</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">virtual_balance</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">NUMERIC(15,2)</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">DEFAULT 10000.00</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;font-family:var(--font-mono)">role</td><td style="padding:6px 8px 6px 0;font-family:var(--font-mono);color:var(--color-text-info)">ENUM</td><td style="padding:6px 8px 6px 0;color:var(--color-text-secondary)">'user' | 'educator' | 'admin'</td></tr>
+    </table>
+  </div>
+
+  <div class="lbl">price_ticks — TimescaleDB hypertable</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <table style="width:100%;font-size:11px;border-collapse:collapse">
+      <tr><th style="text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);padding:0 8px 8px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Column</th><th style="text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);padding:0 8px 8px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Type</th><th style="text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);padding:0 8px 8px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Notes</th></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--g)">time</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">TIMESTAMPTZ</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">Partitioning dimension (1h chunks)</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">ticker</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">VARCHAR(10)</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">e.g. 'FAKE', 'TSIM'</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">price</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">NUMERIC(12,4)</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">Simulated price</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;font-family:var(--font-mono)">volume</td><td style="padding:6px 8px 6px 0;font-family:var(--font-mono);color:var(--color-text-info)">INTEGER</td><td style="padding:6px 8px 6px 0;color:var(--color-text-secondary)">Number of shares in tick</td></tr>
+    </table>
+    <div class="cb"><span class="cm">-- Enable hypertable + continuous aggregate</span>
+<span class="kw">SELECT</span> create_hypertable(<span class="st">'price_ticks'</span>, <span class="st">'time'</span>, chunk_time_interval => INTERVAL <span class="st">'1 hour'</span>);
+<span class="kw">CREATE</span> MATERIALIZED VIEW ohlc_1m
+  WITH (timescaledb.continuous) <span class="kw">AS</span>
+  <span class="kw">SELECT</span> time_bucket(<span class="st">'1 minute'</span>, time) <span class="kw">AS</span> bucket, ticker,
+    first(price, time) <span class="kw">AS</span> open, max(price) <span class="kw">AS</span> high,
+    min(price) <span class="kw">AS</span> low, last(price, time) <span class="kw">AS</span> close
+  <span class="kw">FROM</span> price_ticks <span class="kw">GROUP BY</span> bucket, ticker;</div>
+  </div>
+
+  <div class="lbl">orders</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <table style="width:100%;font-size:11px;border-collapse:collapse">
+      <tr><th style="text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);padding:0 8px 8px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Column</th><th style="text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);padding:0 8px 8px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Type</th><th style="text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);padding:0 8px 8px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Notes</th></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--g)">id</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">UUID PK</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">idempotency key for Kafka replay</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">user_id</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">UUID FK</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">→ users.id</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">ticker</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">VARCHAR(10)</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">Stock symbol</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">type</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">ENUM</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">'market' | 'limit' | 'stop_loss'</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">side</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">ENUM</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">'buy' | 'sell'</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">quantity</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">INTEGER</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">Shares</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">limit_price</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">NUMERIC(12,4)</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">NULL for market orders</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono)">status</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-family:var(--font-mono);color:var(--color-text-info)">ENUM</td><td style="padding:6px 8px 6px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)">'pending' | 'filled' | 'cancelled'</td></tr>
+      <tr><td style="padding:6px 8px 6px 0;font-family:var(--font-mono)">filled_at</td><td style="padding:6px 8px 6px 0;font-family:var(--font-mono);color:var(--color-text-info)">NUMERIC(12,4)</td><td style="padding:6px 8px 6px 0;color:var(--color-text-secondary)">Execution price (NULL until filled)</td></tr>
+    </table>
+  </div>
+
+  <div class="lbl">holdings + competitions (summary)</div>
+  <div class="g2">
+    <div class="card"><h3>holdings</h3><ul>
+      <li><code>user_id</code> + <code>ticker</code> → composite PK</li>
+      <li><code>quantity</code> INTEGER — shares owned</li>
+      <li><code>avg_cost</code> NUMERIC — weighted average buy price</li>
+      <li>Updated atomically on each trade fill</li>
+    </ul></div>
+    <div class="card"><h3>competitions + participants</h3><ul>
+      <li><code>competitions</code>: id, name, start_balance, start_at, end_at, status, created_by</li>
+      <li><code>competition_participants</code>: competition_id, user_id, virtual_balance, rank</li>
+      <li>Leaderboard = ORDER BY virtual_balance + holdings value DESC</li>
+    </ul></div>
+  </div>
+</div>
+
+<!-- KAFKA -->
+<div id="kafka" class="sec">
+  <div class="nt"><strong>Setup:</strong> Single-broker Kafka for dev (KRaft mode — no Zookeeper). Use <code>kafkajs</code> in the Bun backend consumer. Python sim uses <code>confluent-kafka-python</code>.</div>
+
+  <div class="lbl">Topics</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <div style="display:grid;grid-template-columns:200px 1fr 90px;gap:10px;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);padding:0 0 8px;border-bottom:0.5px solid var(--color-border-tertiary)"><span>Topic</span><span>Purpose / payload</span><span>Config</span></div>
+    <div class="row"><div class="mono" style="color:var(--g)">price.ticks</div><div><span class="badge bg">Producer: Python sim</span> <span class="badge bb">Consumer: Elysia</span><br><span style="color:var(--color-text-secondary)">Payload: <code>{ticker, price, volume, ts}</code>. Consumed to persist to TimescaleDB, update Redis, and trigger limit-order checker.</span></div><div style="color:var(--color-text-secondary);font-size:11px">partitions: 5<br>retention: 1h</div></div>
+    <div class="row"><div class="mono" style="color:var(--g)">orders.placed</div><div><span class="badge bg">Producer: Elysia REST</span> <span class="badge bb">Consumer: Order engine</span><br><span style="color:var(--color-text-secondary)">Payload: full order object with UUID. Order engine executes, debits balance, updates holdings, emits <code>orders.filled</code>.</span></div><div style="color:var(--color-text-secondary);font-size:11px">partitions: 3<br>retention: 24h</div></div>
+    <div class="row"><div class="mono" style="color:var(--g)">orders.filled</div><div><span class="badge bg">Producer: Order engine</span> <span class="badge bb">Consumer: Elysia WS notifier</span><br><span style="color:var(--color-text-secondary)">Payload: <code>{order_id, user_id, filled_at, quantity, ticker}</code>. Elysia pushes a personal WS notification to the user.</span></div><div style="color:var(--color-text-secondary);font-size:11px">partitions: 3<br>retention: 24h</div></div>
+    <div class="row"><div class="mono" style="color:var(--g)">sim.control</div><div><span class="badge ba">Producer: Admin API</span> <span class="badge bb">Consumer: Python sim</span><br><span style="color:var(--color-text-secondary)">Payload: <code>{action: "set_strategy", strategy: "circuit_breaker", params: {...}}</code>. Allows admin to hot-swap market simulation mode.</span></div><div style="color:var(--color-text-secondary);font-size:11px">partitions: 1<br>retention: 7d</div></div>
+    <div class="row" style="border:none"><div class="mono" style="color:var(--g)">competition.events</div><div><span class="badge bg">Producer: Competition service</span> <span class="badge bb">Consumer: Leaderboard updater</span><br><span style="color:var(--color-text-secondary)">Payload: <code>{type: "start"|"end"|"trade", competition_id, user_id}</code>. Triggers leaderboard recalculation on trade fills.</span></div><div style="color:var(--color-text-secondary);font-size:11px">partitions: 2<br>retention: 7d</div></div>
+  </div>
+
+  <div class="lbl">Consumer group design</div>
+  <div class="g2">
+    <div class="card"><h3>price-persister group</h3><p>Reads <code>price.ticks</code>. Batch-inserts into TimescaleDB every 500ms using a buffer. Avoids per-tick DB writes at high simulation frequency. Also updates Redis HASH and publishes to Redis Pub/Sub.</p></div>
+    <div class="card"><h3>order-engine group</h3><p>Reads <code>orders.placed</code>. Processes exactly-once via idempotency check on <code>order_id</code> in DB. Executes trade, updates balance + holdings in a single DB transaction, then emits to <code>orders.filled</code>.</p></div>
+  </div>
+</div>
+
+<!-- API ROUTES -->
+<div id="api" class="sec">
+  <div class="lbl">Auth</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <div class="row"><span class="method bb">POST</span><div><span class="mono">/auth/register</span></div><div style="color:var(--color-text-secondary)">Create account, init ₹10,000 balance. Returns JWT.</div></div>
+    <div class="row"><span class="method bb">POST</span><div><span class="mono">/auth/login</span></div><div style="color:var(--color-text-secondary)">Validate credentials, return JWT. Cache session in Redis.</div></div>
+    <div class="row"><span class="method br">POST</span><div><span class="mono">/auth/logout</span></div><div style="color:var(--color-text-secondary)">Blacklist JWT token in Redis until expiry.</div></div>
+  </div>
+
+  <div class="lbl">Market data</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <div class="row"><span class="method bg">GET</span><div><span class="mono">/stocks</span></div><div style="color:var(--color-text-secondary)">List all simulated tickers with current price from Redis.</div></div>
+    <div class="row"><span class="method bg">GET</span><div><span class="mono">/stocks/:ticker/price</span></div><div style="color:var(--color-text-secondary)">Current price snapshot (Redis HGET, sub-ms).</div></div>
+    <div class="row"><span class="method bg">GET</span><div><span class="mono">/stocks/:ticker/candles</span></div><div style="color:var(--color-text-secondary)">OHLC data from TimescaleDB continuous aggregate. Query params: <code>?interval=1m&from=&to=</code>.</div></div>
+    <div class="row"><span class="mono" style="color:var(--g);font-size:12px">WS /ws/prices</span><div style="color:var(--color-text-secondary);font-size:12px;padding-left:10px">WebSocket — subscribe to real-time price stream. Redis Pub/Sub → Elysia WS → client. Payload: <code>{ticker, price, ts}</code> every tick.</div></div>
+  </div>
+
+  <div class="lbl">Portfolio</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <div class="row"><span class="method bg">GET</span><div><span class="mono">/portfolio</span></div><div style="color:var(--color-text-secondary)">Holdings + cash balance + total P&L (holdings priced via Redis live prices).</div></div>
+    <div class="row"><span class="method bg">GET</span><div><span class="mono">/portfolio/history</span></div><div style="color:var(--color-text-secondary)">Filled order history from DB, sorted desc. Paginated.</div></div>
+  </div>
+
+  <div class="lbl">Orders</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <div class="row"><span class="method bb">POST</span><div><span class="mono">/orders</span></div><div style="color:var(--color-text-secondary)">Place market/limit/stop-loss order. Validates balance/holdings, emits to Kafka <code>orders.placed</code>. Body: <code>{ticker, type, side, quantity, limit_price?}</code>.</div></div>
+    <div class="row"><span class="method bg">GET</span><div><span class="mono">/orders</span></div><div style="color:var(--color-text-secondary)">List user's orders — filter by status/ticker.</div></div>
+    <div class="row"><span class="method br">DELETE</span><div><span class="mono">/orders/:id</span></div><div style="color:var(--color-text-secondary)">Cancel a pending limit or stop-loss order. Removes from Redis ZSET + updates DB.</div></div>
+  </div>
+
+  <div class="lbl">Competitions</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <div class="row"><span class="method bb">POST</span><div><span class="mono">/competitions</span></div><div style="color:var(--color-text-secondary)">Educator creates competition. Sets start balance, start/end time.</div></div>
+    <div class="row"><span class="method bb">POST</span><div><span class="mono">/competitions/:id/join</span></div><div style="color:var(--color-text-secondary)">User joins. Gets isolated virtual_balance for that competition.</div></div>
+    <div class="row"><span class="method bg">GET</span><div><span class="mono">/competitions/:id/leaderboard</span></div><div style="color:var(--color-text-secondary)">Ranked list of participants by portfolio value (cash + holdings priced live). Cached in Redis, refreshed on each <code>orders.filled</code> event.</div></div>
+    <div class="row"><span class="method ba">PUT</span><div><span class="mono">/competitions/:id/event</span></div><div style="color:var(--color-text-secondary)">Admin triggers market event (e.g. circuit breaker). Emits to <code>sim.control</code> Kafka topic.</div></div>
+  </div>
+</div>
+
+<!-- REDIS -->
+<div id="redis" class="sec">
+  <div class="lbl">Data structures</div>
+  <div class="card" style="background:var(--color-background-primary)">
+    <div class="row"><div style="font-family:var(--font-mono);font-size:11px;color:var(--g);min-width:180px">HASH prices</div><div style="color:var(--color-text-secondary)">Key: <code>prices</code>. Field: ticker. Value: JSON <code>{price, ts}</code>. TTL 5s per update. GET /stocks reads from here — never hits DB for current price.</div></div>
+    <div class="row"><div style="font-family:var(--font-mono);font-size:11px;color:var(--g);min-width:180px">ZSET pending_limits</div><div style="color:var(--color-text-secondary)">Key: <code>limits:{ticker}</code>. Score = limit_price. On each tick, <code>ZRANGEBYSCORE</code> finds triggered orders. O(log n + k) — very fast.</div></div>
+    <div class="row"><div style="font-family:var(--font-mono);font-size:11px;color:var(--g);min-width:180px">STRING session:{token}</div><div style="color:var(--color-text-secondary)">Blacklisted JWTs after logout. TTL = remaining JWT lifetime. Checked before processing any authenticated request.</div></div>
+    <div class="row"><div style="font-family:var(--font-mono);font-size:11px;color:var(--g);min-width:180px">PUB/SUB price_channel</div><div style="color:var(--color-text-secondary)">Elysia publishes each tick here after DB insert. All WS handler threads subscribe and fan-out to connected clients.</div></div>
+    <div class="row" style="border:none"><div style="font-family:var(--font-mono);font-size:11px;color:var(--g);min-width:180px">HASH leaderboard:{id}</div><div style="color:var(--color-text-secondary)">Competition leaderboard cache. Refreshed on <code>orders.filled</code> events. Served directly to client without DB join. TTL 30s as fallback.</div></div>
+  </div>
+
+  <div class="lbl">Limit order trigger logic</div>
+  <div class="cb"><span class="cm">// In price.ticks Kafka consumer — runs on every price update</span>
+<span class="kw">async function</span> checkLimitOrders(ticker: <span class="ty">string</span>, currentPrice: <span class="ty">number</span>) {
+  <span class="cm">// Buy limits: trigger when price drops to or below limit_price</span>
+  <span class="kw">const</span> buyHits = <span class="kw">await</span> redis.zrangebyscore(<span class="st">`limits:buy:{ticker}`</span>, <span class="st">'-inf'</span>, currentPrice)
+  <span class="cm">// Stop-loss / sell limits: trigger when price rises to or above limit_price</span>
+  <span class="kw">const</span> sellHits = <span class="kw">await</span> redis.zrangebyscore(<span class="st">`limits:sell:{ticker}`</span>, currentPrice, <span class="st">'+inf'</span>)
+  <span class="kw">for</span> (<span class="kw">const</span> orderId <span class="kw">of</span> [...buyHits, ...sellHits]) {
+    <span class="kw">await</span> kafka.send(<span class="st">'orders.placed'</span>, { orderId, triggeredAt: currentPrice })
+    <span class="kw">await</span> redis.zrem(<span class="st">`limits:buy:{ticker}`</span>, orderId)
+  }
+}</div>
+</div>
+
+<!-- SIM ENGINE -->
+<div id="sim" class="sec">
+  <div class="nt"><strong>Tech:</strong> Python microservice using <code>confluent-kafka-python</code>. Runs independently of the Bun backend. Controlled via <code>sim.control</code> Kafka topic.</div>
+  <div class="lbl">Architecture</div>
+  <div class="g2">
+    <div class="card"><h3>Strategy classes</h3><ul>
+      <li><code>RandomWalkStrategy</code> — Gaussian noise applied each tick. Configurable σ (volatility) and drift.</li>
+      <li><code>MeanReversionStrategy</code> — Price drifts back toward a set mean. Models stable stocks.</li>
+      <li><code>CircuitBreakerStrategy</code> — Clamps price movement to ±X% per tick. Admin-triggerable.</li>
+      <li><code>UserInfluenceStrategy</code> — Wraps any base strategy; adjusts price based on recent buy/sell volume from DB.</li>
+    </ul></div>
+    <div class="card"><h3>Tick loop</h3><div class="cb" style="font-size:10px"><span class="cm"># sim/engine.py</span>
+<span class="kw">while</span> running:
+  <span class="kw">for</span> ticker <span class="kw">in</span> tickers:
+    price = strategy.next_price(prices[ticker])
+    prices[ticker] = price
+    producer.produce(<span class="st">'price.ticks'</span>, {
+      <span class="st">'ticker'</span>: ticker,
+      <span class="st">'price'</span>: price,
+      <span class="st">'volume'</span>: random_volume(),
+      <span class="st">'ts'</span>: time.time()
+    })
+  time.sleep(tick_interval)  <span class="cm"># e.g. 1.0s</span></div></div>
+  </div>
+  <div class="lbl">User volume influence</div>
+  <div class="card"><p>Every N ticks, the sim engine queries the DB (or reads a Kafka compacted topic) for recent buy/sell volume per ticker. Net buy pressure pushes price up; net sell pressure pushes it down. This creates the authentic supply-demand feel required by the spec.</p><br>
+  <div class="cb" style="font-size:10px">price_impact = (net_buy_vol - net_sell_vol) / total_vol * impact_factor
+new_price = base_price * (1 + random_walk_delta + price_impact)</div></div>
+</div>
+
+<!-- TIMELINE -->
+<div id="timeline" class="sec">
+  <div class="nt"><strong>Current date: April 7, 2026.</strong> You are in the Development phase. Testing begins in 6 days.</div>
+  <div class="phase">
+    <h4>Phase 1 — Research &amp; planning</h4>
+    <div class="d">Mar 17 – Mar 20</div>
+    <ul><li>Survey existing platforms (Investopedia simulator, MarketWatch, etc.)</li>
+      <li>Evaluate Bun/Elysia maturity — confirm WebSocket + Kafka client support</li>
+      <li>Choose TimescaleDB Docker image, confirm Drizzle ORM compatibility</li>
+      <li>Document 5–6 simulated stocks (tickers, initial prices, volatility params)</li></ul>
+  </div>
+  <div class="phase">
+    <h4>Phase 2 — System design &amp; architecture</h4>
+    <div class="d">Mar 21 – Mar 26</div>
+    <ul><li>Finalize DB schema + Drizzle migrations</li>
+      <li>Define all Kafka topic configs (partitions, retention)</li>
+      <li>Sketch API contract (OpenAPI/Elysia schema) for all endpoints</li>
+      <li>Set up monorepo: <code>/backend</code> (Bun), <code>/frontend</code> (Vite+React), <code>/sim</code> (Python), <code>/infra</code> (Docker Compose)</li>
+      <li>Docker Compose: Kafka (KRaft), TimescaleDB, Redis, Bun backend, Python sim</li></ul>
+  </div>
+  <div class="phase now">
+    <h4>Phase 3 — Core development ← you are here</h4>
+    <div class="d">Mar 27 – Apr 12</div>
+    <ul>
+      <li><strong>Week 1 (Mar 27–Apr 2):</strong> Auth (register/login/JWT), Python sim basic tick loop, price.ticks Kafka → DB pipeline, Redis price cache, WebSocket price feed, React price dashboard skeleton</li>
+      <li><strong>Week 2 (Apr 3–Apr 9):</strong> Order placement (market orders first), holdings management, portfolio view with live P&L, limit order ZSET storage in Redis</li>
+      <li><strong>Week 3 (Apr 10–Apr 12):</strong> Limit + stop-loss trigger logic, competition CRUD + join, leaderboard, admin circuit-breaker event trigger</li>
+    </ul>
+  </div>
+  <div class="phase">
+    <h4>Phase 4 — Testing &amp; integration</h4>
+    <div class="d">Apr 13 – Apr 17</div>
+    <ul>
+      <li>Unit tests: OrderFactory validation, order engine idempotency, strategy classes</li>
+      <li>Integration: full order lifecycle end-to-end (REST → Kafka → DB → WS notification)</li>
+      <li>Load test: simulate 100 concurrent users via k6, verify &lt;2s latency NFR</li>
+      <li>WebSocket stress test: 100 clients receiving live price stream simultaneously</li>
+    </ul>
+  </div>
+  <div class="phase">
+    <h4>Phase 5 — Refinement &amp; prototype finalization</h4>
+    <div class="d">Apr 18 – Apr 21</div>
+    <ul>
+      <li>Fix issues surfaced in testing, UI polish</li>
+      <li>Prepare demo script: register → place orders → trigger circuit breaker → show leaderboard</li>
+      <li>Final documentation (API docs auto-generated from Elysia schemas)</li>
+      <li>Optional: deploy to Railway / Render if time permits</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+function sw(el,id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById(id).classList.add('on');
+}
+</script>
