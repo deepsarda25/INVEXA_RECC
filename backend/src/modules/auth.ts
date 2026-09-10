@@ -2,6 +2,8 @@ import { Elysia, t } from "elysia";
 import { authenticate, hashPassword, verifyPassword } from "../lib/auth";
 import { sql } from "../lib/db";
 import { redis } from "../lib/redis";
+import { issueEmailOtp, verifyEmailOtp } from "../lib/emailOtp";
+import { sendVerificationEmail, sendWelcomeCredentialsEmail } from "../lib/mailer";
 
 const ACCESS_KEY_PATTERN = /^\d{4}$/;
 
@@ -44,11 +46,18 @@ export const authModule = new Elysia({ prefix: "/auth" })
       const accessKeyHash = await hashPassword(body.accessKey);
 
       const [created] = await sql<
-        { id: string; username: string; role: "user" | "educator" | "admin"; email: string; virtualBalance: string }[]
+        {
+          id: string;
+          username: string;
+          role: "user" | "educator" | "admin";
+          email: string;
+          virtualBalance: string;
+          emailVerifiedAt: string | null;
+        }[]
       >`
         INSERT INTO users (username, email, password_hash, access_key_hash, role)
         VALUES (${username}, ${email}, ${passwordHash}, ${accessKeyHash}, ${body.role ?? "user"})
-        RETURNING id, username, role, email, virtual_balance as "virtualBalance"
+        RETURNING id, username, role, email, virtual_balance as "virtualBalance", email_verified_at as "emailVerifiedAt"
       `;
 
       const token = await ctx.jwt.sign({
@@ -58,6 +67,24 @@ export const authModule = new Elysia({ prefix: "/auth" })
       });
 
       await redis.set(`session:active:${token}`, created.id, "EX", 7 * 24 * 60 * 60);
+
+      // Fire-and-forget: a copy of the credentials just set, and a code to
+      // confirm the address is real. Neither blocks or can fail the signup —
+      // sendMail swallows and logs its own errors, and the `.catch` here is
+      // just an extra safety net (same pattern as the order-fill email in
+      // domain/orders/executor.ts).
+      void sendWelcomeCredentialsEmail({
+        to: created.email,
+        username: created.username,
+        email: created.email,
+        password: body.password,
+        accessKey: body.accessKey
+      }).catch((err) => console.error("[mailer] welcome email failed:", err));
+
+      void (async () => {
+        const otp = await issueEmailOtp(created.id);
+        await sendVerificationEmail({ to: created.email, username: created.username, otp });
+      })().catch((err) => console.error("[mailer] verification email failed:", err));
 
       return { token, user: created };
     },
@@ -95,6 +122,7 @@ export const authModule = new Elysia({ prefix: "/auth" })
           accessKeyHash: string | null;
           role: "user" | "educator" | "admin";
           virtualBalance: string;
+          emailVerifiedAt: string | null;
         }[]
       >`
         SELECT id,
@@ -103,7 +131,8 @@ export const authModule = new Elysia({ prefix: "/auth" })
                password_hash as "passwordHash",
                access_key_hash as "accessKeyHash",
                role,
-               virtual_balance as "virtualBalance"
+               virtual_balance as "virtualBalance",
+               email_verified_at as "emailVerifiedAt"
         FROM users
         WHERE email = ${usernameOrEmail} OR username = ${identifier}
         LIMIT 1
@@ -141,7 +170,8 @@ export const authModule = new Elysia({ prefix: "/auth" })
           username: user.username,
           email: user.email,
           role: user.role,
-          virtualBalance: user.virtualBalance
+          virtualBalance: user.virtualBalance,
+          emailVerifiedAt: user.emailVerifiedAt
         }
       };
     },
@@ -173,6 +203,47 @@ export const authModule = new Elysia({ prefix: "/auth" })
   .get("/me", async (ctx: any) => {
     const { user } = await authenticate(ctx as any);
     return { user };
+  })
+  .post(
+    "/verify-email",
+    async (ctx: any) => {
+      const { user } = await authenticate(ctx as any);
+      const body = ctx.body as any;
+
+      const result = await verifyEmailOtp(user.id, String(body.otp));
+
+      if (result === "no-code") {
+        ctx.set.status = 400;
+        return { error: "No verification code is pending. Request a new one." };
+      }
+      if (result === "too-many-attempts") {
+        ctx.set.status = 429;
+        return { error: "Too many incorrect attempts. Request a new code." };
+      }
+      if (result === "wrong-code") {
+        ctx.set.status = 400;
+        return { error: "Incorrect code." };
+      }
+
+      await sql`UPDATE users SET email_verified_at = NOW(), updated_at = NOW() WHERE id = ${user.id}`;
+
+      return { ok: true };
+    },
+    {
+      body: t.Object({
+        otp: t.String({ minLength: 6, maxLength: 6 })
+      })
+    }
+  )
+  .post("/resend-verification", async (ctx: any) => {
+    const { user } = await authenticate(ctx as any);
+
+    const otp = await issueEmailOtp(user.id);
+    await sendVerificationEmail({ to: user.email, username: user.username, otp }).catch((err) =>
+      console.error("[mailer] verification email failed:", err)
+    );
+
+    return { ok: true };
   })
   .post(
     "/change-password",

@@ -11,6 +11,7 @@ export type AuthUser = {
   email: string;
   role: "user" | "educator" | "admin";
   virtualBalance: string;
+  emailVerifiedAt: Date | null;
 };
 
 export async function hashPassword(raw: string) {
@@ -51,7 +52,8 @@ export async function authenticate(context: Context & { jwt: any }) {
       username: users.username,
       email: users.email,
       role: users.role,
-      virtualBalance: users.virtualBalance
+      virtualBalance: users.virtualBalance,
+      emailVerifiedAt: users.emailVerifiedAt
     })
     .from(users)
     .where(eq(users.id, String(payload.sub)))

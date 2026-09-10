@@ -21,6 +21,11 @@ export async function ensureSchemaCompatibility() {
     -- Access Key: a 4-digit PIN alternate credential, alongside the password.
     ALTER TABLE users ADD COLUMN IF NOT EXISTS access_key_hash VARCHAR(255);
 
+    -- Email verification: set once the signup OTP (see lib/emailOtp.ts) is
+    -- confirmed. NULL means unverified; nothing else in the app gates on it
+    -- today, it is just recorded.
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
+
     -- Deposits: audit log of "add money" top-ups, used in account statements.
     CREATE TABLE IF NOT EXISTS deposits (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
