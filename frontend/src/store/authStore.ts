@@ -8,6 +8,7 @@ type User = {
   email: string;
   role: "user" | "educator" | "admin";
   virtualBalance: string;
+  emailVerifiedAt?: string | null;
 };
 
 type AuthState = {
@@ -28,6 +29,7 @@ type AuthState = {
   }) => Promise<void>;
   logout: () => Promise<void>;
   updateBalance: (virtualBalance: string) => void;
+  markEmailVerified: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -90,6 +92,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const current = get().user;
     if (current) {
       set({ user: { ...current, virtualBalance } });
+    }
+  },
+  markEmailVerified: () => {
+    const current = get().user;
+    if (current) {
+      set({ user: { ...current, emailVerifiedAt: new Date().toISOString() } });
     }
   }
 }));

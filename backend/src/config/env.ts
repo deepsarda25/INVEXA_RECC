@@ -55,8 +55,17 @@ const envSchema = z.object({
   COMPETITION_EVENTS_TOPIC: z.string().default("competition-events"),
   REAL_TICKERS: z.string().default("RELIANCE.NS,TCS.NS,HDFCBANK.NS,INFY.NS"),
   REAL_TICKER_INTERVAL: z.coerce.number().default(10000),
-  // Transaction email notifications. Left unset, the app runs fine and
-  // simply skips sending mail (logged once) — nothing else depends on this.
+  // Transaction email notifications. Nothing set at all -> the app runs
+  // fine and simply skips sending mail (logged once) -- nothing else
+  // depends on this.
+  //
+  // Three transports are tried in order, each one only if it's configured:
+  // Mailjet, then SendGrid, then plain SMTP. The first one that actually
+  // sends wins; a provider that errors or isn't configured falls through
+  // to the next rather than failing the request. See lib/mailer.ts.
+  MAILJET_API_KEY: z.string().optional(),
+  MAILJET_SECRET_KEY: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_SECURE: z

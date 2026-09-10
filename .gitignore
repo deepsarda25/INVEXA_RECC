@@ -16,9 +16,9 @@ __pycache__/
 venv/
 
 # Env / secrets
-.env
-.env.*
-!.env.example
+# .env
+# .env.*
+# !.env.example
 
 # Logs
 *.log

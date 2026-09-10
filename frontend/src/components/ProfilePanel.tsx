@@ -35,6 +35,7 @@ type User = {
   email: string;
   role: "user" | "educator" | "admin";
   virtualBalance: string;
+  emailVerifiedAt?: string | null;
 };
 
 type Props = {
@@ -49,11 +50,18 @@ const QUICK_AMOUNTS = [10000, 50000, 100000, 500000];
 
 export function ProfilePanel({ user, token, portfolio, onLogout, onBalanceChanged }: Props) {
   const updateBalance = useAuthStore((s) => s.updateBalance);
+  const markEmailVerified = useAuthStore((s) => s.markEmailVerified);
   const [amount, setAmount] = useState<number | "">(50000);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; kind: "success" | "error" } | null>(null);
   const [pdfLoading, setPdfLoading] = useState<"holdings" | "statement" | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
+
+  // Email verification (signup OTP)
+  const [verifyOtp, setVerifyOtp] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState<{ text: string; kind: "success" | "error" } | null>(null);
 
   // Security: change password
   const [currentPasswordForPw, setCurrentPasswordForPw] = useState("");
@@ -205,6 +213,37 @@ export function ProfilePanel({ user, token, portfolio, onLogout, onBalanceChange
     }
   };
 
+  const submitVerifyEmail = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!token) return;
+    setVerifyMessage(null);
+    setVerifyLoading(true);
+    try {
+      await apiFetch("/auth/verify-email", { method: "POST", body: JSON.stringify({ otp: verifyOtp }) }, token);
+      markEmailVerified();
+      setVerifyOtp("");
+      setVerifyMessage({ text: "✓ Email verified", kind: "success" });
+    } catch (error) {
+      setVerifyMessage({ text: (error as Error).message, kind: "error" });
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const resendVerification = async () => {
+    if (!token) return;
+    setVerifyMessage(null);
+    setResendLoading(true);
+    try {
+      await apiFetch("/auth/resend-verification", { method: "POST" }, token);
+      setVerifyMessage({ text: "✓ A new code has been emailed to you", kind: "success" });
+    } catch (error) {
+      setVerifyMessage({ text: (error as Error).message, kind: "error" });
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <div className="card">
@@ -245,6 +284,43 @@ export function ProfilePanel({ user, token, portfolio, onLogout, onBalanceChange
           </div>
         </div>
       </div>
+
+      {/* Email verification */}
+      {!user.emailVerifiedAt && (
+        <div className="card">
+          <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 className="title-sm">Verify Your Email</h2>
+            <span className="badge">Not verified</span>
+          </div>
+          <p className="body-sm" style={{ color: "var(--text-2)", marginBottom: "1rem" }}>
+            We emailed a 6-digit code to <strong>{user.email}</strong> when your account was created. Enter it below
+            to confirm the address is yours.
+          </p>
+          <form onSubmit={submitVerifyEmail} style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "flex-end" }}>
+            <label className="form-label" style={{ flex: "1 1 180px" }}>
+              Verification Code
+              <input
+                className="form-input"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={verifyOtp}
+                onChange={(e) => setVerifyOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="••••••"
+                style={{ letterSpacing: "0.4em" }}
+                required
+              />
+            </label>
+            <button type="submit" className="btn-primary" disabled={verifyLoading || verifyOtp.length !== 6}>
+              {verifyLoading ? "Verifying…" : "Verify Email"}
+            </button>
+            <button type="button" className="btn-sm" onClick={resendVerification} disabled={resendLoading}>
+              {resendLoading ? "Sending…" : "Resend Code"}
+            </button>
+          </form>
+          {verifyMessage && <p className={`order-msg ${verifyMessage.kind}`}>{verifyMessage.text}</p>}
+        </div>
+      )}
 
       {/* Add Money */}
       <div className="card">

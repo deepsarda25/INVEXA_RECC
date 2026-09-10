@@ -29,6 +29,7 @@ export const users = pgTable("users", {
   accessKeyHash: varchar("access_key_hash", { length: 255 }).notNull(),
   virtualBalance: numeric("virtual_balance", { precision: 15, scale: 2 }).notNull().default("1000000.00"),
   role: userRoleEnum("role").notNull().default("user"),
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 });
