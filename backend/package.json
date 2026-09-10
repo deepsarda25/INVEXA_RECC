@@ -6,7 +6,7 @@
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
     "check": "tsc --noEmit",
-    "mail:check": "bun src/scripts/mailCheck.ts",
+    "mail:check": "tsx src/scripts/mailCheck.ts",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
@@ -32,6 +32,7 @@
     "@types/node": "^22.7.4",
     "@types/nodemailer": "^8.0.1",
     "drizzle-kit": "^0.24.2",
+    "tsx": "^4.19.1",
     "typescript": "^5.6.3"
   }
 }
