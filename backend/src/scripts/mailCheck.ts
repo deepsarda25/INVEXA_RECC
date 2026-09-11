@@ -4,22 +4,26 @@ import { sendMail } from "../lib/mailer";
 // npm run mail:check -- someone@example.com
 //
 // Sends one real test email through whatever provider is configured in
-// .env (Mailjet, then SendGrid, then plain SMTP — see lib/mailer.ts), and
-// says plainly whether it went out. Without this, "is my email set up
-// right?" is only answerable by registering an account and waiting to see
-// if anything arrives — which looks like a signup bug, not a mail
-// configuration problem, when it fails.
+// .env (Brevo, then Gmail SMTP — see lib/mailer.ts), and says plainly
+// whether it went out. Without this, "is my email set up right?" is only
+// answerable by registering an account and waiting to see if anything
+// arrives — which looks like a signup bug, not a mail configuration
+// problem, when it fails.
 async function main() {
   const to = process.argv[2];
 
+  if (!env.NOTIFY_BY_EMAIL) {
+    console.log("NOTIFY_BY_EMAIL=0 — email is currently silenced on purpose. Set it to 1 (or unset it) to test.");
+    return;
+  }
+
   const configured: string[] = [];
-  if (env.MAILJET_API_KEY && env.MAILJET_SECRET_KEY) configured.push("Mailjet");
-  if (env.SENDGRID_API_KEY) configured.push("SendGrid");
-  if (env.SMTP_HOST) configured.push(`SMTP (${env.SMTP_HOST}:${env.SMTP_PORT})`);
+  if (env.BREVO_API_KEY) configured.push("Brevo");
+  if (env.GMAIL_USER && env.GMAIL_APP_PASSWORD) configured.push("Gmail SMTP");
 
   if (configured.length === 0) {
     console.log("No mail provider is set — mail is currently OFF. The app still runs fine without it.");
-    console.log("Set MAILJET_API_KEY/MAILJET_SECRET_KEY, or SENDGRID_API_KEY, or SMTP_HOST/SMTP_USER/SMTP_PASS in .env.");
+    console.log("Set BREVO_API_KEY, or GMAIL_USER/GMAIL_APP_PASSWORD, in .env.");
     return;
   }
 
@@ -40,7 +44,7 @@ async function main() {
   });
   console.log("Done. Check the inbox (and spam folder) at " + to + ".");
   console.log("If it never arrives, check the console output above — each provider logs its own failure and");
-  console.log("this falls through to the next one configured, e.g. '[mailer] Mailjet responded 401; falling back.'");
+  console.log("this falls through to the next one configured, e.g. '[mailer] Brevo responded 401; falling back.'");
 }
 
 await main();

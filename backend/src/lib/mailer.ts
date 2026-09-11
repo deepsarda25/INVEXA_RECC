@@ -1,9 +1,9 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
 
-// ── Transport chain: Mailjet, then SendGrid, then plain SMTP ────────────────
+// ── Transport chain: Brevo, then Gmail SMTP ──────────────────────────────────
 //
-// Three independent ways to actually put an email on the wire, tried in that
+// Two independent ways to actually put an email on the wire, tried in that
 // order. Each is only attempted if it's configured, and a provider that
 // errors (bad key, account issue, rate limit, network blip) falls through to
 // the next rather than losing the email outright. This is the same reasoning
@@ -11,8 +11,12 @@ import { env } from "../config/env";
 // point of failure that has nothing to do with a bug in this code, and it
 // stops a demo dead the moment it has a bad afternoon.
 //
-// With nothing configured at all, sending is skipped (logged once) and
-// nothing else in the app depends on it.
+// Brevo is primary (a real transactional-email API); Gmail SMTP is the
+// fallback — dead simple to set up (an App Password, no third-party account
+// review) and not subject to a SaaS provider silently revoking a trial key.
+//
+// With nothing configured at all, or with NOTIFY_BY_EMAIL=0, sending is
+// skipped (logged once) and nothing else in the app depends on it.
 
 type MailOpts = { to: string; subject: string; text: string; html?: string };
 
@@ -27,96 +31,49 @@ function parseFrom(raw: string): { name: string; email: string } {
 
 let warnedMissingConfig = false;
 
-async function sendViaMailjet(opts: MailOpts): Promise<boolean> {
-  if (!env.MAILJET_API_KEY || !env.MAILJET_SECRET_KEY) return false;
-
-  const from = parseFrom(env.MAIL_FROM);
-  const auth = Buffer.from(`${env.MAILJET_API_KEY}:${env.MAILJET_SECRET_KEY}`).toString("base64");
-
-  const response = await fetch("https://api.mailjet.com/v3.1/send", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      Messages: [
-        {
-          From: { Email: from.email, Name: from.name },
-          To: [{ Email: opts.to }],
-          Subject: opts.subject,
-          TextPart: opts.text,
-          HTMLPart: opts.html
-        }
-      ]
-    })
-  });
-
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    console.error(`[mailer] Mailjet responded ${response.status}; falling back. ${detail}`);
-    return false;
-  }
-
-  // Mailjet answers 200 even when the individual message was refused — the
-  // real outcome is inside the body, one entry per message. Trusting only
-  // the HTTP status here would report a send that never happened.
-  const body = (await response.json()) as { Messages?: Array<{ Status?: string; Errors?: unknown }> };
-  const status = body?.Messages?.[0]?.Status;
-  if (status !== "success") {
-    console.error("[mailer] Mailjet refused the message:", JSON.stringify(body?.Messages?.[0]));
-    return false;
-  }
-
-  return true;
-}
-
-async function sendViaSendGrid(opts: MailOpts): Promise<boolean> {
-  if (!env.SENDGRID_API_KEY) return false;
+async function sendViaBrevo(opts: MailOpts): Promise<boolean> {
+  if (!env.BREVO_API_KEY) return false;
 
   const from = parseFrom(env.MAIL_FROM);
 
-  const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.SENDGRID_API_KEY}`,
+      "api-key": env.BREVO_API_KEY,
+      Accept: "application/json",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      personalizations: [{ to: [{ email: opts.to }] }],
-      from: { email: from.email, name: from.name },
+      sender: { email: from.email, name: from.name },
+      to: [{ email: opts.to }],
       subject: opts.subject,
-      content: [
-        { type: "text/plain", value: opts.text },
-        ...(opts.html ? [{ type: "text/html", value: opts.html }] : [])
-      ]
+      textContent: opts.text,
+      htmlContent: opts.html
     })
   });
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    console.error(`[mailer] SendGrid responded ${response.status}; falling back. ${detail}`);
+    console.error(`[mailer] Brevo responded ${response.status}; falling back. ${detail}`);
     return false;
   }
 
   return true;
 }
 
-let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+let gmailTransporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
-async function sendViaSmtp(opts: MailOpts): Promise<boolean> {
-  if (!env.SMTP_HOST) return false;
+async function sendViaGmailSmtp(opts: MailOpts): Promise<boolean> {
+  if (!env.GMAIL_USER || !env.GMAIL_APP_PASSWORD) return false;
 
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_SECURE,
-      auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS } : undefined
+  if (!gmailTransporter) {
+    gmailTransporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: env.GMAIL_USER, pass: env.GMAIL_APP_PASSWORD }
     });
   }
 
-  await transporter.sendMail({
+  await gmailTransporter.sendMail({
     from: env.MAIL_FROM,
     to: opts.to,
     subject: opts.subject,
@@ -128,32 +85,39 @@ async function sendViaSmtp(opts: MailOpts): Promise<boolean> {
 }
 
 const TRANSPORTS: Array<{ name: string; send: (opts: MailOpts) => Promise<boolean> }> = [
-  { name: "Mailjet", send: sendViaMailjet },
-  { name: "SendGrid", send: sendViaSendGrid },
-  { name: "SMTP", send: sendViaSmtp }
+  { name: "Brevo", send: sendViaBrevo },
+  { name: "Gmail SMTP", send: sendViaGmailSmtp }
 ];
+
+let warnedSilenced = false;
 
 /**
  * sendMail — fire-and-forget email delivery.
  *
  * Deliberately never throws: a slow/misconfigured/unreachable mail provider
  * must never fail (or even delay) the operation that triggered the email —
- * e.g. an order fill. Failures are logged server-side only. Tries Mailjet,
- * then SendGrid, then SMTP, in order, and stops at the first one that
- * actually sends.
+ * e.g. an order fill. Failures are logged server-side only. Tries Brevo,
+ * then Gmail SMTP, in order, and stops at the first one that actually sends.
  */
 export async function sendMail(opts: MailOpts) {
+  if (!env.NOTIFY_BY_EMAIL) {
+    if (!warnedSilenced) {
+      console.log("[mailer] NOTIFY_BY_EMAIL=0 — emails are silenced while testing by hand.");
+      warnedSilenced = true;
+    }
+    return;
+  }
+
   const configured = TRANSPORTS.filter((t) => {
-    if (t.name === "Mailjet") return Boolean(env.MAILJET_API_KEY && env.MAILJET_SECRET_KEY);
-    if (t.name === "SendGrid") return Boolean(env.SENDGRID_API_KEY);
-    return Boolean(env.SMTP_HOST);
+    if (t.name === "Brevo") return Boolean(env.BREVO_API_KEY);
+    return Boolean(env.GMAIL_USER && env.GMAIL_APP_PASSWORD);
   });
 
   if (configured.length === 0) {
     if (!warnedMissingConfig) {
       console.warn(
         "[mailer] No mail provider is configured — emails will be skipped. " +
-          "Set MAILJET_API_KEY/MAILJET_SECRET_KEY, or SENDGRID_API_KEY, or SMTP_HOST/SMTP_USER/SMTP_PASS."
+          "Set BREVO_API_KEY, or GMAIL_USER/GMAIL_APP_PASSWORD."
       );
       warnedMissingConfig = true;
     }

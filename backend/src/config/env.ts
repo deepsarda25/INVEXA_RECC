@@ -59,22 +59,21 @@ const envSchema = z.object({
   // fine and simply skips sending mail (logged once) -- nothing else
   // depends on this.
   //
-  // Three transports are tried in order, each one only if it's configured:
-  // Mailjet, then SendGrid, then plain SMTP. The first one that actually
-  // sends wins; a provider that errors or isn't configured falls through
-  // to the next rather than failing the request. See lib/mailer.ts.
-  MAILJET_API_KEY: z.string().optional(),
-  MAILJET_SECRET_KEY: z.string().optional(),
-  SENDGRID_API_KEY: z.string().optional(),
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().default(587),
-  SMTP_SECURE: z
+  // Two transports are tried in order, each only if it's configured:
+  // Brevo, then Gmail SMTP. The first one that actually sends wins; a
+  // provider that errors or isn't configured falls through to the next
+  // rather than failing the request. See lib/mailer.ts.
+  BREVO_API_KEY: z.string().optional(),
+  GMAIL_USER: z.string().optional(),
+  GMAIL_APP_PASSWORD: z.string().optional(),
+  MAIL_FROM: z.string().default("Invexa <no-reply@invexa.app>"),
+  // Global kill switch for every email this app sends (OTP, credentials,
+  // trade fills). Set to "0" to silence them while testing by hand; unset
+  // or anything else means on.
+  NOTIFY_BY_EMAIL: z
     .string()
     .optional()
-    .transform((v) => v === "true"),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  MAIL_FROM: z.string().default("Invexa <no-reply@invexa.app>")
+    .transform((v) => v !== "0")
 });
 
 const parsed = envSchema.parse(process.env);
